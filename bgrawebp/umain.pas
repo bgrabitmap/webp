@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, libwebp,
-  BGRAVirtualScreen, bgrabitmap, bgrabitmaptypes, BCTypes;
+  BGRAVirtualScreen, bgrabitmap, bgrabitmaptypes, BCTypes, bgrawebp;
 
 type
 
@@ -39,24 +39,9 @@ implementation
 procedure TForm1.Button1Click(Sender: TObject);
 var
   bmp: TBGRABitmap;
-  outWebP: PByte;
-  fileWebP: TFileStream;
-  i: integer;
 begin
-  bmp := TBGRABitmap.Create('powered_by.png');
-
-  // Image is vertically flipped
-  bmp.VerticalFlip;
-
-  WebPEncodeBGRA(bmp.DataByte, bmp.width, bmp.height, bmp.Width * 4, 100, outWebP);
-
-  fileWebP := TFileStream.Create('file.webp', fmCreate);
-  for i:=0 to (bmp.Width*bmp.Height)-1 do
-  begin
-    fileWebP.Write(outWebP^, 1);
-    Inc(outWebP,1);
-  end;
-  fileWebp.Free;
+  bmp := TBGRABitmap.Create(Application.Location + 'powered_by.png');
+  bmp.SaveToWebPFile(Application.Location + 'file.webp', 100);
   bmp.Free;
 end;
 
@@ -67,55 +52,8 @@ begin
 end;
 
 procedure TForm1.Button2Click(Sender: TObject);
-var
-  i: integer;
-  bmp: TBGRABitmap;
-  fileWebP: TFileStream;
-  inWebP: array of byte;
-  outWebP: PByte;
-  w, h: Integer;
-  p: PBGRAPixel;
 begin
-
-  fileWebP := TFileStream.Create('test.webp', fmOpenRead);
-
-  SetLength(inWebP, fileWebP.Size);
-
-  //ShowMessage(fileWebP.Size.ToString);
-
-  for i:=0 to fileWebP.Size-1 do
-  begin
-    inWebP[i] := fileWebP.ReadByte;
-  end;
-
-  WebPGetInfo(@inWebP[0], fileWebP.Size, @w, @h);
-  outWebP := WebPDecodeRGBA(@inWebP[0], fileWebP.Size, @w, @h);
-
-  bgrab.SetSize(w, h);
-
-  p := bgrab.Data;
-
-  for i:=0 to (w*h)-1 do
-  begin
-    p^.red := outWebP^;
-    inc(outWebP);
-    p^.green := outWebP^;
-    inc(outWebP);
-    p^.blue := outWebP^;
-    inc(outWebP);
-    p^.alpha := outWebP^;
-    inc(outWebP);
-    inc(p);
-  end;
-
-  bgrab.InvalidateBitmap;
-
-  // Image is vertically flipped
-  bgrab.VerticalFlip;
-
-  //ShowMessage(w.ToString + ' ' + h.ToString);
-
-  fileWebP.Free;
+  bgrab.LoadFromWebPFile(Application.Location + 'test.webp');
   BGRAVirtualScreen1.DiscardBitmap;
 end;
 
