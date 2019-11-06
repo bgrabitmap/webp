@@ -86,7 +86,7 @@ begin
   end;
 
   WebPGetInfo(@inWebP[0], fileWebP.Size, @w, @h);
-  outWebP := WebPDecodeBGRA(@inWebP[0], fileWebP.Size, @w, @h);
+  outWebP := WebPDecodeRGBA(@inWebP[0], fileWebP.Size, @w, @h);
 
   bgrab.SetSize(w, h);
 
@@ -94,9 +94,15 @@ begin
 
   for i:=0 to (w*h)-1 do
   begin
-    p^ := outWebP^;
+    p^.red := outWebP^;
+    inc(outWebP);
+    p^.green := outWebP^;
+    inc(outWebP);
+    p^.blue := outWebP^;
+    inc(outWebP);
+    p^.alpha := outWebP^;
+    inc(outWebP);
     inc(p);
-    inc(outWebP,4);
   end;
 
   bgrab.InvalidateBitmap;
