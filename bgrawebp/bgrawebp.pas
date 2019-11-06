@@ -25,28 +25,29 @@ procedure TBGRABitmapWebPHelper.LoadFromWebPFile(FileName: string);
 var
   fileWebP: TFileStream;
   inWebP: packed array of byte;
-  outWebP: PByte;
   w, h: integer;
+  ok: Boolean;
 begin
   fileWebP := TFileStream.Create(FileName, fmOpenRead);
+  try
+    SetLength(inWebP, fileWebP.Size);
+    if inWebP<>nil then
+      fileWebP.Read(inWebP[0], length(inWebP));
+  finally
+    fileWebP.Free;
+  end;
 
-  SetLength(inWebP, fileWebP.Size);
-  if inWebP<>nil then
-    fileWebP.Read(inWebP[0], length(inWebP));
-  fileWebP.Free;
-
-  WebPGetInfo(@inWebP[0], length(inWebP), @w, @h);
-
-  {$PUSH}{$WARNINGS OFF}
-  if TBGRAPixel_RGBAOrder then
-    outWebP := WebPDecodeRGBA(@inWebP[0], length(inWebP), @w, @h)
-  else
-    outWebP := WebPDecodeBGRA(@inWebP[0], length(inWebP), @w, @h);
-  {$POP}
+  if WebPGetInfo(@inWebP[0], length(inWebP), @w, @h) = 0 then
+    raise exception.Create('Invalid WebP header');
 
   Self.SetSize(w, h);
-  move(outWebP^, self.Data^, self.RowSize*h);
-  WebPFree(outWebP);
+  {$PUSH}{$WARNINGS OFF}
+  if TBGRAPixel_RGBAOrder then
+    ok := WebPDecodeRGBAInto(@inWebP[0], length(inWebP), self.DataByte, self.RowSize*h, self.RowSize)<>nil
+  else
+    ok := WebPDecodeBGRAInto(@inWebP[0], length(inWebP), self.DataByte, self.RowSize*h, self.RowSize)<>nil;
+  {$POP}
+  if not ok then raise exception.Create('Error decoding WebP');
   if self.LineOrder = riloBottomToTop then Self.VerticalFlip;
 end;
 
@@ -66,12 +67,17 @@ begin
     outSize := WebPEncodeBGRA(Self.DataByte, Self.Width, Self.Height, Self.Width *
       4, Quality, outWebP{%H-});
   {$POP}
+  if outSize = 0 then
+    raise exception.Create('Error encoding WebP');
 
   fileWebP := TFileStream.Create(FileName, fmCreate);
-  fileWebP.Write(outWebP^, outSize);
-  fileWebp.Free;
-  WebPFree(outWebP);
-  if self.LineOrder = riloBottomToTop then Self.VerticalFlip;
+  try
+    fileWebP.Write(outWebP^, outSize);
+    if self.LineOrder = riloBottomToTop then Self.VerticalFlip;
+  finally
+    fileWebp.Free;
+    WebPFree(outWebP);
+  end;
 end;
 
 end.
