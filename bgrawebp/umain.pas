@@ -44,7 +44,10 @@ var
   i: integer;
 begin
   bmp := TBGRABitmap.Create('powered_by.png');
-  bmp.DataByte;
+
+  // Image is vertically flipped
+  bmp.VerticalFlip;
+
   WebPEncodeBGRA(bmp.DataByte, bmp.width, bmp.height, bmp.Width * 4, 100, outWebP);
 
   fileWebP := TFileStream.Create('file.webp', fmCreate);
@@ -74,7 +77,7 @@ var
   p: PBGRAPixel;
 begin
 
-  fileWebP := TFileStream.Create('file.webp', fmOpenRead);
+  fileWebP := TFileStream.Create('test.webp', fmOpenRead);
 
   SetLength(inWebP, fileWebP.Size);
 
@@ -106,6 +109,9 @@ begin
   end;
 
   bgrab.InvalidateBitmap;
+
+  // Image is vertically flipped
+  bgrab.VerticalFlip;
 
   //ShowMessage(w.ToString + ' ' + h.ToString);
 
