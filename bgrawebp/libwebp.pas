@@ -18,8 +18,10 @@ const
     LIB_WEBP = 'libwebp86.dll';
   {$elseif defined(Win64)}
     LIB_WEBP = 'libwebp64.dll';
-  {$else if defined(Linux)}
+  {$elseif defined(Linux) or defined(Darwin)}
     LIB_WEBP = 'libwebp.so';
+  {$else}
+     {$error Os not handled}
   {$endif}
 
 //-----------------------------------------------------------------------------
@@ -260,6 +262,9 @@ function WebPDecodeBGRA(const data: PByte; data_size: Cardinal;
 function WebPDecodeYUV(const data: PByte; data_size: Cardinal; width, height: PInteger;
   var u, v: PByte; stride, uv_stride: PInteger): PByte; cdecl; external LIB_WEBP;
 
+// Releases memory returned by the WebPDecode*() functions above.
+procedure WebPFree(const data: PByte); cdecl; external LIB_WEBP;
+
 // These three functions are variants of the above ones, that decode the image
 // directly into a pre-allocated buffer 'output_buffer'. The maximum storage
 // available in this buffer is indicated by 'output_buffer_size'. If this
@@ -368,59 +373,6 @@ function WebPIDecGetRGB(const idec: PWebPIDecoder; last_y, width,
 function WebPIDecGetYUV(const idec: PWebPIDecoder; last_y: PInteger;
   var u, v: PByte; width, height, stride, uv_stride: PInteger): PByte; cdecl; external LIB_WEBP;
 
-
-(*******************************************************************************
-   decode_vp8.h
-   Low-level API for VP8 decoder
- ******************************************************************************)
-
-//-----------------------------------------------------------------------------
-// Lower-level API
-//
-// Thes functions provide fine-grained control of the decoding process.
-// The call flow should resemble:
-//
-//   VP8Io io;
-//   VP8InitIo(&io);
-//   io.data = data;
-//   io.data_size = size;
-//   /* customize io's functions (setup()/put()/teardown()) if needed. */
-//
-//   VP8Decoder* dec = VP8New();
-//   bool ok = VP8Decode(dec);
-//   if (!ok) printf("Error: %s\n", VP8StatusMessage(dec));
-//   VP8Delete(dec);
-//   return ok;
-
-
-// Create a new decoder object.
-function VP8New: PWebPIDecoder; cdecl; external LIB_WEBP;
-
-// Must be called to make sure 'io' is initialized properly.
-// Returns false in case of version mismatch. Upon such failure, no other
-// decoding function should be called (VP8Decode, VP8GetHeaders, ...)
-function VP8InitIo(const io: PVP8Io): Integer;
-
-// Start decoding a new picture. Returns true if ok.
-function VP8GetHeaders(const dec: PVP8Decoder; const io: PVP8Io): Integer; cdecl; external LIB_WEBP;
-
-// Decode a picture. Will call VP8GetHeaders() if it wasn't done already.
-// Returns false in case of error.
-function VP8Decode(const dec: PVP8Decoder; const io: PVP8Io): Integer; cdecl; external LIB_WEBP;
-
-// Return current status of the decoder:
-function VP8Status(const dec: PVP8Decoder): TVP8StatusCode; cdecl; external LIB_WEBP;
-
-// return readable string corresponding to the last status.
-function VP8StatusMessage(const dec: PVP8Decoder): PAnsiChar; cdecl; external LIB_WEBP;
-
-// Resets the decoder in its initial state, reclaiming memory.
-// Not a mandatory call between calls to VP8Decode().
-procedure VP8Clear(const dec: PVP8Decoder); cdecl; external LIB_WEBP;
-
-// Destroy the decoder object.
-procedure VP8Delete(const dec: PVP8Decoder); cdecl; external LIB_WEBP;
-
 (******************************************************************************
   WebP encoder: main interface
  ******************************************************************************)
@@ -520,17 +472,6 @@ function WebPEncode(const config: PWebPConfig; const picture: PWebPPicture): Int
 
 
 implementation
-
-// Internal, version-checked, entry point
-function VP8InitIoInternal(const io: PVP8Io; bersion: Integer): Integer; cdecl; external LIB_WEBP;
-
-const
-  WEBP_DECODER_ABI_VERSION = $0001;
-
-function VP8InitIo(const io: PVP8Io): Integer;
-begin
-  Result := VP8InitIoInternal(io, WEBP_DECODER_ABI_VERSION);
-end;
 
 // Internal, version-checked, entry point
 const
