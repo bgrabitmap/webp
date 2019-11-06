@@ -19,7 +19,9 @@ type
 
 implementation
 
+{$ifdef Windows}
 uses Windows;
+{$endif}
 
 { TBGRABitmapWebPHelper }
 
