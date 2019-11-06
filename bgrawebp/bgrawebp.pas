@@ -19,6 +19,8 @@ type
 
 implementation
 
+uses Windows;
+
 { TBGRABitmapWebPHelper }
 
 procedure TBGRABitmapWebPHelper.LoadFromWebPFile(FileName: string);
@@ -69,21 +71,20 @@ var
   outWebP: PByte;
   fileWebP: TFileStream;
   i: integer;
+  outSize: Cardinal;
 begin
-  Self.VerticalFlip;
+  if self.LineOrder = riloBottomToTop then Self.VerticalFlip;
 
-  WebPEncodeBGRA(Self.DataByte, Self.Width, Self.Height, Self.Width *
+  outSize := WebPEncodeBGRA(Self.DataByte, Self.Width, Self.Height, Self.Width *
     4, Quality, outWebP{%H-});
 
   fileWebP := TFileStream.Create(FileName, fmCreate);
-  for i := 0 to (Self.Width * Self.Height) - 1 do
-  begin
-    fileWebP.Write(outWebP^, 1);
-    Inc(outWebP);
-  end;
+  fileWebP.Write(outWebP^, outSize);
   fileWebp.Free;
 
-  Self.VerticalFlip;
+  //Free or WebPFree(outWebP);
+
+  if self.LineOrder = riloBottomToTop then Self.VerticalFlip;
 end;
 
 end.
