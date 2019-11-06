@@ -18,8 +18,8 @@ const
     LIB_WEBP = 'libwebp86.dll';
   {$elseif defined(Win64)}
     LIB_WEBP = 'libwebp64.dll';
-  {$else}
-     {$error this code is written for win32 or win64}
+  {$else if defined(Linux)}
+    LIB_WEBP = 'libwebp.so';
   {$endif}
 
 //-----------------------------------------------------------------------------
