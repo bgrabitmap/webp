@@ -59,7 +59,6 @@ begin
     Inc(p);
   end;
 
-  Self.InvalidateBitmap;
   Self.VerticalFlip;
 
   fileWebP.Free;
@@ -74,7 +73,7 @@ begin
   Self.VerticalFlip;
 
   WebPEncodeBGRA(Self.DataByte, Self.Width, Self.Height, Self.Width *
-    4, Quality, outWebP);
+    4, Quality, outWebP{%H-});
 
   fileWebP := TFileStream.Create(FileName, fmCreate);
   for i := 0 to (Self.Width * Self.Height) - 1 do
