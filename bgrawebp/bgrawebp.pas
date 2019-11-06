@@ -24,7 +24,6 @@ implementation
 procedure TBGRABitmapWebPHelper.LoadFromWebPFile(FileName: string);
 var
   i: integer;
-  bmp: TBGRABitmap;
   fileWebP: TFileStream;
   inWebP: array of byte;
   outWebP: PByte;
