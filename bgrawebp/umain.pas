@@ -58,27 +58,13 @@ begin
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
-var
- webplibname : string;
 begin
   bgrab := TBGRABitmap.Create(0,0);
-
-   {$if defined(Win32)}
-    webplibname := 'libwebp86.dll';
-  {$elseif defined(Win64)}
-    webplibname := 'libwebp64.dll';
-  {$elseif defined(Linux) and defined(cpu64)}
-    webplibname := 'libwebp64.so';
-  {$else}
-     {$error Os not handled}
-  {$endif}
-  webp_Load(ExtractFilePath(ParamStr(0)) + directoryseparator + webplibname);
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   bgrab.Free;
-  webp_unload();
 end;
 
 end.

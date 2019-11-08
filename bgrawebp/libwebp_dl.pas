@@ -23,10 +23,12 @@ const
     LIB_WEBP = 'libwebp86.dll';
   {$elseif defined(Win64)}
     LIB_WEBP = 'libwebp64.dll';
-  {$elseif defined(Linux) or defined(Darwin)}
+  {$elseif defined(Linux)}
     LIB_WEBP = 'libwebp.so';
+  {$elseif defined(Darwin)}
+    LIB_WEBP = 'libwebp.dylib';
   {$else}
-     {$error Os not handled}
+    LIB_WEBP = '';
   {$endif}
 
 //-----------------------------------------------------------------------------
@@ -487,19 +489,18 @@ WebPConfigInitInternal: function(const conf: PWebPConfig; preset: TWebPPreset;
 // Internal, version-checked, entry point
 WebPPictureInitInternal: function(const picture: PWebPPicture; version: Integer): Integer; cdecl;
 {Special methods for dynamic loading of lib ...}
-  
-webp_handle:TLibHandle=dynlibs.NilHandle; // this will hold our handle for the lib; it functions nicely as a mutli-lib prevention unit as well...
 
-referencecounter : cardinal = 0;  // Reference counter
+var
+  LibWebPHandle: TLibHandle = dynlibs.NilHandle; // this will hold our handle for the lib; it functions nicely as a mutli-lib prevention unit as well...
+  LibWebPRefCount : cardinal = 0;  // Reference counter
          
-function webp_isloaded : boolean; inline; 
-
-Function webp_load(const libfilename:string) :boolean; // load the lib
-
-Procedure webp_unload(); // unload and frees the lib from memory : do not forget to call it before close application.
-
+function LibWebPLoaded : boolean; inline;
+Function LibWebPLoad(const libfilename:string = ''): boolean; // load the lib
+Procedure LibWebPUnload; // unload and frees the lib from memory : do not forget to call it before close application.
 
 implementation
+
+uses sysutils;
 
 // Internal, version-checked, entry point
 const
@@ -521,87 +522,91 @@ begin
   Result := WebPPictureInitInternal(picture, WEBP_ENCODER_ABI_VERSION);
 end;
 
-function webp_IsLoaded: boolean;
+function LibWebPLoaded: boolean;
 begin
- Result := (webp_Handle <> dynlibs.NilHandle);
+ Result := (LibWebPHandle <> dynlibs.NilHandle);
 end;
 
-Function webp_Load (const libfilename:string) :boolean;
+Function LibWebPLoad (const libfilename:string) :boolean;
 var
-thelib: string; 
+  thelib: string;
 begin
   Result := False;
-  if webp_Handle<>0 then 
+  if LibWebPHandle<>0 then
+  begin
+   Inc(LibWebPRefCount);
+   result:=true {is it already there ?}
+  end else
+  begin {go & load the library}
+    if Length(libfilename) = 0 then
+    begin
+      thelib := LIB_WEBP;
+      if thelib = '' then exit(false);
+      thelib := ExtractFilePath(ParamStr(0)) + DirectorySeparator + thelib;
+    end else thelib := libfilename;
+    LibWebPHandle := DynLibs.SafeLoadLibrary(thelib); // obtain the handle we want
+    if LibWebPHandle <> DynLibs.NilHandle then
+    begin {now we tie the functions to the VARs from above}
+
+Pointer(WebPGetDecoderVersion):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPGetDecoderVersion'));
+Pointer(WebPGetInfo):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPGetInfo'));
+Pointer(WebPDecodeRGB):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPDecodeRGB'));
+Pointer(WebPDecodeRGBA):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPDecodeRGBA'));
+Pointer(WebPDecodeBGR):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPDecodeBGR'));
+Pointer(WebPDecodeBGRA):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPDecodeBGRA'));
+Pointer(WebPDecodeYUV):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPDecodeYUV'));
+Pointer(WebPFree):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPFree'));
+Pointer(WebPDecodeRGBInto):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPDecodeRGBInto'));
+Pointer(WebPDecodeRGBAInto):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPDecodeRGBAInto'));
+Pointer(WebPDecodeBGRInto):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPDecodeBGRInto'));
+Pointer(WebPDecodeBGRAInto):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPDecodeBGRAInto'));
+Pointer(WebPDecodeYUVInto):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPDecodeYUVInto'));
+Pointer(WebPINew):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPINew'));
+Pointer(WebPINewRGB):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPINewRGB'));
+Pointer(WebPINewYUV):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPINewYUV'));
+Pointer(WebPIDelete):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPIDelete'));
+Pointer(WebPIAppend):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPIAppend'));
+Pointer(WebPIUpdate):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPIUpdate'));
+Pointer(WebPIDecGetRGB):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPIDecGetRGB'));
+Pointer(WebPIDecGetYUV):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPIDecGetYUV'));
+Pointer(WebPGetEncoderVersion):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPGetEncoderVersion'));
+Pointer(WebPEncodeRGB):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPEncodeRGB'));
+Pointer(WebPEncodeBGR):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPEncodeBGR'));
+Pointer(WebPEncodeRGBA):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPEncodeRGBA'));
+Pointer(WebPEncodeBGRA):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPEncodeBGRA'));
+//Pointer(WebPConfigInit):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPConfigInit'));
+//Pointer(WebPConfigPreset):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPConfigPreset'));
+//Pointer(WebPPictureInit):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureInit'));
+Pointer(WebPPictureAlloc):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureAlloc'));
+Pointer(WebPPictureFree):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureFree'));
+Pointer(WebPPictureCopy):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureCopy'));
+Pointer(WebPPictureCrop):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureCrop'));
+Pointer(WebPPictureImportRGB):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureImportRGB'));
+Pointer(WebPPictureImportRGBA):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureImportRGBA'));
+Pointer(WebPPictureImportBGR):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureImportBGR'));
+Pointer(WebPPictureImportBGRA):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureImportBGRA'));
+Pointer(WebPEncode):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPEncode'));
+Pointer(WebPConfigInitInternal):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPConfigInitInternal'));
+Pointer(WebPPictureInitInternal):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureInitInternal'));
+
+    end;
+    Result := LibWebPLoaded;
+    LibWebPRefCount:=1;
+  end;
+end;
+
+Procedure LibWebPUnload;
 begin
- Inc(ReferenceCounter);
- result:=true {is it already there ?}
-end  else 
-begin {go & load the library}
-   if Length(libfilename) = 0 then thelib := LIB_WEBP else thelib := libfilename;
-    webp_Handle:=DynLibs.SafeLoadLibrary(thelib); // obtain the handle we want
-  	if webp_Handle <> DynLibs.NilHandle then
-begin {now we tie the functions to the VARs from above}
-
-Pointer(WebPGetDecoderVersion):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPGetDecoderVersion'));
-Pointer(WebPGetInfo):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPGetInfo'));
-Pointer(WebPDecodeRGB):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPDecodeRGB'));
-Pointer(WebPDecodeRGBA):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPDecodeRGBA'));
-Pointer(WebPDecodeBGR):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPDecodeBGR'));
-Pointer(WebPDecodeBGRA):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPDecodeBGRA'));
-Pointer(WebPDecodeYUV):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPDecodeYUV'));
-Pointer(WebPFree):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPFree'));
-Pointer(WebPDecodeRGBInto):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPDecodeRGBInto'));
-Pointer(WebPDecodeRGBAInto):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPDecodeRGBAInto'));
-Pointer(WebPDecodeBGRInto):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPDecodeBGRInto'));
-Pointer(WebPDecodeBGRAInto):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPDecodeBGRAInto'));
-Pointer(WebPDecodeYUVInto):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPDecodeYUVInto'));
-Pointer(WebPINew):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPINew'));
-Pointer(WebPINewRGB):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPINewRGB'));
-Pointer(WebPINewYUV):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPINewYUV'));
-Pointer(WebPIDelete):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPIDelete'));
-Pointer(WebPIAppend):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPIAppend'));
-Pointer(WebPIUpdate):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPIUpdate'));
-Pointer(WebPIDecGetRGB):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPIDecGetRGB'));
-Pointer(WebPIDecGetYUV):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPIDecGetYUV'));
-Pointer(WebPGetEncoderVersion):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPGetEncoderVersion'));
-Pointer(WebPEncodeRGB):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPEncodeRGB'));
-Pointer(WebPEncodeBGR):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPEncodeBGR'));
-Pointer(WebPEncodeRGBA):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPEncodeRGBA'));
-Pointer(WebPEncodeBGRA):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPEncodeBGRA'));
-//Pointer(WebPConfigInit):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPConfigInit'));
-//Pointer(WebPConfigPreset):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPConfigPreset'));
-//Pointer(WebPPictureInit):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPPictureInit'));
-Pointer(WebPPictureAlloc):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPPictureAlloc'));
-Pointer(WebPPictureFree):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPPictureFree'));
-Pointer(WebPPictureCopy):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPPictureCopy'));
-Pointer(WebPPictureCrop):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPPictureCrop'));
-Pointer(WebPPictureImportRGB):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPPictureImportRGB'));
-Pointer(WebPPictureImportRGBA):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPPictureImportRGBA'));
-Pointer(WebPPictureImportBGR):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPPictureImportBGR'));
-Pointer(WebPPictureImportBGRA):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPPictureImportBGRA'));
-Pointer(WebPEncode):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPEncode'));
-Pointer(WebPConfigInitInternal):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPConfigInitInternal'));
-Pointer(WebPPictureInitInternal):=DynLibs.GetProcedureAddress(webp_Handle,PChar('WebPPictureInitInternal'));
-
-end;
-   Result := webp_IsLoaded;
-   ReferenceCounter:=1;   
-end;
-
-end;
-
-Procedure webp_Unload;
-begin
-// < Reference counting
-  if ReferenceCounter > 0 then
-    dec(ReferenceCounter);
-  if ReferenceCounter > 0 then
+  // < Reference counting
+  if LibWebPRefCount > 0 then
+    dec(LibWebPRefCount);
+  if LibWebPRefCount > 0 then
     exit;
   // >
-  if webp_IsLoaded then
+  if LibWebPLoaded then
   begin
-    DynLibs.UnloadLibrary(webp_Handle);
-    webp_Handle:=DynLibs.NilHandle;
+    DynLibs.UnloadLibrary(LibWebPHandle);
+    LibWebPHandle:=DynLibs.NilHandle;
   end;
 end;
 

@@ -5,13 +5,15 @@ unit bgrawebp;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, libwebp_dl;
+  Classes, SysUtils, BGRABitmap, BGRABitmapTypes;
 
 type
 
   { TBGRABitmapWebPHelper }
 
   TBGRABitmapWebPHelper = class helper for TBGRABitmap
+  private
+    procedure NeedLibWebP;
   public
     procedure LoadFromWebPFile(FileName: string);
     procedure SaveToWebPFile(FileName: string; Quality: single);
@@ -19,7 +21,15 @@ type
 
 implementation
 
+uses libwebp_dl{$ifdef linux}, ulinuxlib{$endif};
+
 { TBGRABitmapWebPHelper }
+
+procedure TBGRABitmapWebPHelper.NeedLibWebP;
+begin
+  if not LibWebPLoaded then
+    raise exception.Create('LibWebP is not available');
+end;
 
 procedure TBGRABitmapWebPHelper.LoadFromWebPFile(FileName: string);
 var
@@ -28,6 +38,8 @@ var
   w, h: integer;
   ok: Boolean;
 begin
+  NeedLibWebP;
+
   fileWebP := TFileStream.Create(FileName, fmOpenRead);
   try
     SetLength(inWebP, fileWebP.Size);
@@ -57,6 +69,8 @@ var
   fileWebP: TFileStream;
   outSize: Cardinal;
 begin
+  NeedLibWebP;
+
   if self.LineOrder = riloBottomToTop then Self.VerticalFlip;
 
   {$PUSH}{$WARNINGS OFF}
@@ -79,6 +93,17 @@ begin
     WebPFree(outWebP);
   end;
 end;
+
+var
+  initLoadWebP: boolean;
+
+initialization
+
+  initLoadWebP := LibWebPLoad({$ifdef linux}FindLinuxLibrary('libwebp.so'){$endif});
+
+finalization
+
+  if initLoadWebP then LibWebPUnload;
 
 end.
 
