@@ -5,7 +5,7 @@ unit bgrawebp;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, libwebp;
+  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, libwebp_dl;
 
 type
 
