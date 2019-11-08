@@ -24,9 +24,9 @@ const
   {$elseif defined(Win64)}
     LIB_WEBP = 'libwebp64.dll';
   {$elseif defined(Linux)}
-    LIB_WEBP = 'libwebp.so';
+    LIB_WEBP = 'libwebp.so.6';
   {$elseif defined(Darwin)}
-    LIB_WEBP = 'libwebp.dylib';
+    LIB_WEBP = 'libwebp.6.dylib';
   {$else}
     LIB_WEBP = '';
   {$endif}
