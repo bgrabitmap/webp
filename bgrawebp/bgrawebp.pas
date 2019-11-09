@@ -87,9 +87,9 @@ begin
   fileWebP := TFileStream.Create(FileName, fmCreate);
   try
     fileWebP.Write(outWebP^, outSize);
-    if self.LineOrder = riloBottomToTop then Self.VerticalFlip;
   finally
     fileWebp.Free;
+    if self.LineOrder = riloBottomToTop then Self.VerticalFlip;
     WebPFree(outWebP);
   end;
 end;
