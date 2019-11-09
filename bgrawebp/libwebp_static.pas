@@ -15,10 +15,12 @@ unit libwebp;
 interface
 const
   {$if defined(Win32)}
-    LIB_WEBP = 'libwebp86.dll';
+    LIB_WEBP = 'libwebp32.dll';
   {$elseif defined(Win64)}
     LIB_WEBP = 'libwebp64.dll';
-  {$elseif defined(Linux) or defined(Darwin)}
+   {$elseif defined(Darwin)}
+    LIB_WEBP = 'libwebp.dylib';
+   {$elseif defined(Unix)}
     LIB_WEBP = 'libwebp.so';
   {$else}
      {$error Os not handled}

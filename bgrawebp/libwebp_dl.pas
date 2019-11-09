@@ -20,7 +20,7 @@ uses
 
 const
   {$if defined(Win32)}
-    LIB_WEBP = 'libwebp86.dll';
+    LIB_WEBP = 'libwebp32.dll';
   {$elseif defined(Win64)}
     LIB_WEBP = 'libwebp64.dll';
    {$elseif defined(Darwin)}
