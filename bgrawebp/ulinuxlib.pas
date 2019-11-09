@@ -7,25 +7,25 @@ interface
 uses
   Classes, SysUtils;
 
-function FindLinuxLibrary(ALinkerName: string): string;
+function FindLinuxLibrary(ALinkerName: string; AMinimumVersion: integer = 0): string;
 
 implementation
 
 uses process;
 
-function FindLinuxLibrary(ALinkerName: string): string;
+function FindLinuxLibrary(ALinkerName: string; AMinimumVersion: integer): string;
 const
   OpenBracket = ' (';
   Arrow = ') => ';
 var
-  dataText, s, fileName, flags, path: string;
+  dataText, s, fileName, flags, path, versionStr: string;
   dataList, flagList: TStringList;
-  openBracketPos, arrowPos: SizeInt;
+  openBracketPos, arrowPos, posDot: SizeInt;
   versionInt, errPos, i: integer;
   maxVersionInt: integer;
 begin
   result := '';
-  maxVersionInt := -1;
+  maxVersionInt := AMinimumVersion-1;
   RunCommand('ldconfig', ['-p'], dataText, []);
   dataList := TStringList.Create;
   dataList.Text := dataText;
@@ -40,7 +40,10 @@ begin
       fileName := trim(copy(s,1,openBracketPos-1));
       if fileName.StartsWith(ALinkerName+'.') then
       begin
-        val(copy(fileName, length(ALinkerName)+2, length(fileName)-length(ALinkerName)-1), versionInt, errPos);
+        versionStr := copy(fileName, length(ALinkerName)+2, length(fileName)-length(ALinkerName)-1);
+        posDot := pos('.', versionStr);
+        if posDot > 0 then versionStr := copy(versionStr, posDot-1);
+        val(versionStr, versionInt, errPos);
         if errPos = 0 then
         begin
           flags := copy(s, openBracketPos+length(OpenBracket), arrowPos-openBracketPos-length(OpenBracket));

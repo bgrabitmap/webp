@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls,
-  BGRAVirtualScreen, bgrabitmap, bgrabitmaptypes, bgrawebp, libwebp_dl;
+  BGRAVirtualScreen, bgrabitmap, bgrabitmaptypes, bgrawebp;
 
 type
 

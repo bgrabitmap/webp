@@ -99,7 +99,7 @@ var
 
 initialization
 
-  initLoadWebP := LibWebPLoad({$ifdef linux}FindLinuxLibrary('libwebp.so'){$endif});
+  initLoadWebP := LibWebPLoad({$ifdef linux}FindLinuxLibrary('libwebp.so', 6){$endif});
 
 finalization
 
