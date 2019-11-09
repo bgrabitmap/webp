@@ -542,7 +542,9 @@ begin
     begin
       thelib := LIB_WEBP;
       if thelib = '' then exit(false);
+      {$IFDEF WINDOWS}
       thelib := ExtractFilePath(ParamStr(0)) + DirectorySeparator + thelib;
+      {$ENDIF}
     end else thelib := libfilename;
     LibWebPHandle := DynLibs.SafeLoadLibrary(thelib); // obtain the handle we want
     if LibWebPHandle <> DynLibs.NilHandle then
